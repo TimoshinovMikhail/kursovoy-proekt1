@@ -1,0 +1,155 @@
+#define _CRT_SECURE_NO_DEPRECATE
+#include <stdio.h>
+#include <math.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <time.h>
+
+// --- Прототипы функций ---
+double f(double x);
+int get_input_data(double* arr, int max_size);
+double calculate_value(double x);
+double create_table(double start, double step, int n);
+double find_extremum(int mode); 
+double find_x_by_y(double target_y, double eps);
+double calculate_derivative(double x, double h);
+
+int main() {
+    setlocale(LC_CTYPE, "RUS");
+    srand((unsigned int)time(NULL));
+
+    int choice;
+    do {
+        printf("\n  _______________________________\n");
+        printf("  |     АНАЛИЗ ФУНКЦИИ f(x)     |\n");
+        printf("  |-----------------------------|\n");
+        printf("  |  1. f(x) в точках           |\n");
+        printf("  |  2. Таблица значений        |\n");
+        printf("  |  3. Поиск min/max           |\n");
+        printf("  |  4. Найти x по Y            |\n");
+        printf("  |  5. Производная f'(x)       |\n");
+        printf("  |  0. Выход                   |\n");
+        printf("  |_____________________________|\n");
+        printf("Выберите пункт: ");
+        if (scanf("%d", &choice) != 1) break;
+
+        switch (choice) {
+        case 1: {
+            double data[100];
+            int n = get_input_data(data, 100);
+            for (int i = 0; i < n; i++)
+                printf("f(%.4f) = %.6f\n", data[i], calculate_value(data[i]));
+            break;
+        }
+        case 2: {
+            double s, st; int count;
+            printf("Начало, шаг, кол-во: ");
+            scanf("%lf %lf %d", &s, &st, &count);
+            create_table(s, st, count);
+            break;
+        }
+        case 3:
+            printf("Минимум в наборе: %.6f\n", find_extremum(0));
+            printf("Максимум в наборе: %.6f\n", find_extremum(1));
+            break;
+        case 4: {
+            double y, e;
+            printf("Введите Y и точность: ");
+            scanf("%lf %lf", &y, &e);
+            find_x_by_y(y, e);
+            break;
+        }
+        case 5: {
+            double data[100];
+            int n = get_input_data(data, 100);
+            for (int i = 0; i < n; i++)
+                printf("f'(%.4f) = %.6f\n", data[i], calculate_derivative(data[i], 0.0001));
+            break;
+        }
+        }
+    } while (choice != 0);
+
+    return 0;
+}
+
+// Математическая функция
+double f(double x) {
+    if (x < 0) {
+        if (fabs(x) < 1e-9) return 0;
+        return (sin(x) - x * cos(x)) / (x * x * x);
+    }
+    else if (x < 4) {
+        return exp(atan(x)) * log(1 + x * x) - (x * x * x) / sqrt(1 + x * x * x * x);
+    }
+    else {
+        return log(1 + x) * (x * x - 3 * x + 2);
+    }
+}
+
+// Ввод данных
+int get_input_data(double* arr, int max_size) {
+    int mode, count = 0;
+    printf("\n1. Случайные 2. Файл 3. Ручной: ");
+    scanf("%d", &mode);
+
+    if (mode == 1) {
+        printf("Кол-во: "); scanf("%d", &count);
+        for (int i = 0; i < count && i < max_size; i++) arr[i] = (rand() % 2000 - 1000) / 100.0;
+    }
+    else if (mode == 2) {
+        FILE* f = fopen("input.txt", "r");
+        if (f) {
+            while (count < max_size && fscanf(f, "%lf", &arr[count]) != EOF) count++;
+            fclose(f);
+        }
+    }
+    else {
+        printf("Кол-во: "); scanf("%d", &count);
+        for (int i = 0; i < count && i < max_size; i++) scanf("%lf", &arr[i]);
+    }
+    return count;
+}
+
+double calculate_value(double x) {
+    return f(x);
+}
+
+double create_table(double start, double step, int n) {
+    double sum = 0;
+    printf("\n|   x   |   f(x)   |\n|-------|----------|\n");
+    for (int i = 0; i < n; i++) {
+        double val = f(start);
+        printf("|%6.2f |%10.4f|\n", start, val);
+        sum += val;
+        start += step;
+    }
+    return sum;
+}
+
+double find_extremum(int mode) {
+    double data[100];
+    int n = get_input_data(data, 100);
+    if (n <= 0) return 0;
+
+    double res = f(data[0]);
+    for (int i = 1; i < n; i++) {
+double current = f(data[i]);
+        if (mode == 0 && current < res) res = current;
+        if (mode == 1 && current > res) res = current;
+    }
+    return res;
+}
+
+double find_x_by_y(double target_y, double eps) {
+    for (double x = -10.0; x <= 10.0; x += 0.01) {
+        if (fabs(f(x) - target_y) < eps) {
+            printf("x = %.4f\n", x);
+            return x;
+        }
+    }
+    return -999;
+}
+
+double calculate_derivative(double x, double h) {
+    return (f(x + h) - f(x - h)) / (2 * h);
+}
